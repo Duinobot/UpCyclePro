@@ -2,9 +2,8 @@ from django.db import models
 # import everything needed
 from django.db.models.signals import pre_save, post_save
 from django.utils.text import slugify
-from listings.models import Listing
-from price_table.models import PriceTable
-
+from orders.models import Order
+from users.models import CustomUser
 # Create your models here.
 class PhoneModel(models.Model):
     name = models.CharField(max_length=100)
@@ -13,12 +12,6 @@ class PhoneModel(models.Model):
     def __str__(self):
         return self.name
 
-# auto generate slug for PhoneModel
-def pre_save_phone_model(sender, instance, *args, **kwargs):
-    if not instance.slug:
-        instance.slug = slugify(instance.name)
-
-pre_save.connect(pre_save_phone_model, sender=PhoneModel)
 
 class PhoneColor(models.Model):
     name = models.CharField(max_length=100)
@@ -28,12 +21,6 @@ class PhoneColor(models.Model):
     def __str__(self):
         return self.name
 
-# auto generate slug(model name + color) for PhoneColor
-def pre_save_phone_color(sender, instance, *args, **kwargs):
-    if not instance.slug:
-        instance.slug = slugify(instance.phonemodel.name + instance.name)
-
-pre_save.connect(pre_save_phone_color, sender=PhoneColor)
 
 class PhoneStorage(models.Model):
     storage = models.CharField(max_length=100)
@@ -43,12 +30,6 @@ class PhoneStorage(models.Model):
     def __str__(self):
         return self.storage
 
-# auto generate slug(model name + storage) for PhoneStorage
-def pre_save_phone_storage(sender, instance, *args, **kwargs):
-    if not instance.slug:
-        instance.slug = slugify(instance.phonemodel.name + instance.storage)
-
-pre_save.connect(pre_save_phone_storage, sender=PhoneStorage)
 
 class Phone(models.Model):
     name = models.CharField(max_length=100)
@@ -70,7 +51,9 @@ class Phone(models.Model):
     # cost_price, sold_price, selling_price
     cost_price = models.IntegerField()
     sold_price = models.IntegerField(null=True, blank=True)
-    # selling_price = listings.price
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, null=True, blank=True)
+    customer = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True)
+
 
     # phone grade (A, B, C, D, Parts)
     grade = models.CharField(max_length=1, choices=[('A', 'A'), ('B', 'B'), ('C', 'C'), ('D', 'D'), ('P', 'Parts')])
@@ -113,25 +96,3 @@ class Phone(models.Model):
 
     def __str__(self):
         return self.name
-
-# auto generate slug(imei) for Phone
-def pre_save_phone(sender, instance, *args, **kwargs):
-    if not instance.slug:
-        instance.slug = slugify(instance.imei)
-
-pre_save.connect(pre_save_phone, sender=Phone)
-
-# when phone is created, Create Listing if combinattion of Mdoel storage, grade is not in Listings
-# create PriceTable if combination of Model, storage, grade is not in PriceTable
-def post_save_phone(sender, instance, created, *args, **kwargs):
-    if created:
-        # check if combination of model, storage, grade is in Listings
-        if not Listing.objects.filter(phonemodel=instance.phonemodel, storage=instance.storage, grade=instance.grade).exists():
-            # if not, create new Listing
-            Listing.objects.create(phonemodel=instance.phonemodel, storage=instance.storage, grade=instance.grade)
-        # check if combination of model, storage, grade is in PriceTable
-        if not PriceTable.objects.filter(phonemodel=instance.phonemodel, storage=instance.storage, grade=instance.grade).exists():
-            # if not, create new PriceTable
-            PriceTable.objects.create(phonemodel=instance.phonemodel, storage=instance.storage, grade=instance.grade)
-
-post_save.connect(post_save_phone, sender=Phone)
