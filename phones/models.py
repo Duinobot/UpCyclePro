@@ -1,58 +1,74 @@
 from django.db import models
-# import everything needed
-from django.db.models.signals import pre_save, post_save
-from django.utils.text import slugify
 from orders.models import Order
-from users.models import CustomUser
+# import ValidationError
+from django.core.exceptions import ValidationError
+
+
 # Create your models here.
 class PhoneModel(models.Model):
-    name = models.CharField(max_length=100)
-    slug = models.SlugField()
+    model = models.CharField(max_length=100)
+    slug = models.SlugField(blank=True)
 
     def __str__(self):
-        return self.name
+        return self.model
+
+    # unique field: model
+    class Meta:
+        unique_together = ('model',)
 
 
 class PhoneColor(models.Model):
-    name = models.CharField(max_length=100)
+    color = models.CharField(max_length=100)
     phonemodel = models.ForeignKey(PhoneModel, on_delete=models.CASCADE)
-    slug = models.SlugField()
+    slug = models.SlugField(blank=True)
 
     def __str__(self):
-        return self.name
+        return f"{self.color} ({self.phonemodel})"
+    
+    # unique together fields: color, phonemodel
+    class Meta:
+        unique_together = ('color', 'phonemodel') 
 
 
 class PhoneStorage(models.Model):
-    storage = models.CharField(max_length=100)
+    # storage option: 16, 32, 64, 128, 256, 512 GB, 1 TB
+    storage = models.CharField(max_length=100, choices=[('16GB', '16GB'), ('32GB', '32GB'), ('64GB', '64GB'), ('128GB', '128GB'), ('256GB', '256GB'), ('512GB', '512GB'), ('1024TB', '1024TB')])
     phonemodel = models.ForeignKey(PhoneModel, on_delete=models.CASCADE)
-    slug = models.SlugField()
+    slug = models.SlugField(blank=True)
 
     def __str__(self):
-        return self.storage
+        return f"{self.storage} ({self.phonemodel})"
+
+    # unique together fields: storage, phonemodel
+    class Meta:
+        unique_together = ('storage', 'phonemodel')
 
 
 class Phone(models.Model):
-    name = models.CharField(max_length=100)
-    slug = models.SlugField()
+    name = models.CharField(max_length=100, blank=True)
+    slug = models.SlugField(blank=True)
     phonemodel = models.ForeignKey(PhoneModel, on_delete=models.CASCADE)
     color = models.ForeignKey(PhoneColor, on_delete=models.CASCADE)
     storage = models.ForeignKey(PhoneStorage, on_delete=models.CASCADE)
     imei = models.CharField(max_length=100)
 
-    price = models.IntegerField()
-    image = models.ImageField(upload_to='phones/images/')
-    description = models.TextField()
+    price_table = models.ForeignKey('price_table.PriceTable', on_delete=models.CASCADE, null=True, blank=True)
+    listing = models.ForeignKey('listings.Listing', on_delete=models.CASCADE, null=True, blank=True)
+
+    image = models.ImageField(upload_to='phones/images/', blank=True)
+    description = models.TextField(blank=True)
 
     # date created, date updated, data sold
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     sold_at = models.DateTimeField(null=True, blank=True)
+    status = models.CharField(max_length=1, choices=[('A', 'Available'), ('S', 'Sold'), ('R', 'Reserved')], default='A')
 
     # cost_price, sold_price, selling_price
-    cost_price = models.IntegerField()
+    cost_price = models.IntegerField(null=True, blank=True)
     sold_price = models.IntegerField(null=True, blank=True)
     order = models.ForeignKey(Order, on_delete=models.CASCADE, null=True, blank=True)
-    customer = models.ForeignKey(CustomUser, on_delete=models.CASCADE, null=True, blank=True)
+    customer = models.ForeignKey('users.CustomUser', on_delete=models.CASCADE, null=True, blank=True)
 
 
     # phone grade (A, B, C, D, Parts)
@@ -96,3 +112,10 @@ class Phone(models.Model):
 
     def __str__(self):
         return self.name
+
+    # color and storage must have the same phonemodel as the phone
+    def clean(self):
+        if self.color.phonemodel != self.phonemodel:
+            raise ValidationError('Color must belong to specific Model')
+        if self.storage.phonemodel != self.phonemodel:
+            raise ValidationError('Storage must belong to specific Model')

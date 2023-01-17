@@ -1,0 +1,34 @@
+<!-- Path: phones\templates\phones\phone_list.html -->
+<!-- use bootstrap -->
+<html>
+<head>
+    <title>Phone List</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h2>Phone List</h2>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Phone Name</th>
+                    <th>Phone Price</th>
+                    <th>Phone Description</th>
+                    <th>Phone Image</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for phone in phones %}
+                <tr>
+                    <td>{{ phone.name }}</td>
+                    <td>{{ phone.price_table.price }}</td>
+                    <td>{{ phone.description }}</td>
+                    <td><img src="{{ phone.image }}" alt="phone image" width="100" height="100"></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</html>

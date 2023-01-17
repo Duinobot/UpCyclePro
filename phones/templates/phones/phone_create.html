@@ -1,0 +1,19 @@
+<!-- Create Phones-->
+<html>
+<head>
+    <title>Create Phone</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h2>Create Phone</h2>
+        <form action="/create/" method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <input type="submit" value="Create Phone">
+        </form>
+    </div>
+</body>
+</html>
